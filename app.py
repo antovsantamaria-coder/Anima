@@ -78,9 +78,11 @@ with st.expander("📋 Ver historial de conversación"):
 
 # --- Botón para limpiar chat ---
 if st.button("🧹 Reiniciar chat"):
-    st.session_state.messages = []
-    st.session_state.historial = []
-    st.experimental_rerun()
+    usuario = st.session_state.usuario
+    st.session_state.clear()
+    st.session_state.usuario = usuario
+    st.rerun()
+
 
 st.markdown("---")
 st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + OpenAI")
