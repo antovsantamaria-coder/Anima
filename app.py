@@ -1,12 +1,12 @@
 import streamlit as st
 import os
-from openai import OpenAI
+from groq import Groq  # Librería oficial de Groq
 
 # --- Configuración inicial ---
 st.set_page_config(page_title="💬 ANIMA - Apoyo Emocional UDD", page_icon="💙", layout="centered")
 
-# --- Cliente OpenAI ---
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# --- Cliente Groq ---
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # --- Función para validar correo institucional ---
 def validar_correo_udc(correo):
@@ -40,12 +40,11 @@ if "historial" not in st.session_state:
 if "mostrar_whatsapp" not in st.session_state:
     st.session_state.mostrar_whatsapp = False
 
-# --- Función para guardar historial ---
+# --- Funciones auxiliares ---
 def guardar_historial(usuario, mensaje, respuesta):
     nuevo = {"usuario": usuario, "mensaje": mensaje, "respuesta": respuesta}
     st.session_state.historial.append(nuevo)
 
-# --- Función para detectar si debe derivar ---
 def necesita_apoyo(mensaje):
     palabras_clave = [
         "triste", "ansiosa", "estresada", "cansada", "mal", "hablar con alguien",
@@ -56,7 +55,6 @@ def necesita_apoyo(mensaje):
 # --- Interfaz principal ---
 st.title("💙 ANIMA - Apoyo Emocional UDD")
 st.caption(f"Sesión iniciada como: **{st.session_state.usuario}**")
-
 st.write("ANIMA te escucha y te acompaña. Cuéntame cómo te sientes hoy 💛")
 
 # Mostrar historial del chat
@@ -74,14 +72,14 @@ if prompt := st.chat_input("Escribe tu mensaje aquí..."):
     if necesita_apoyo(prompt):
         st.session_state.mostrar_whatsapp = True
 
-    # --- Llamada a la IA ---
+    # --- Llamada al modelo de Groq ---
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
 
         try:
-            stream = client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = client.chat.completions.create(
+                model="llama-3.1-70b-versatile",
                 messages=[
                     {"role": "system", "content": "Eres ANIMA, un asistente emocional de la Universidad del Desarrollo. Escucha con empatía, haz preguntas suaves y deriva a un profesional si es necesario."},
                     *st.session_state.messages,
@@ -89,15 +87,15 @@ if prompt := st.chat_input("Escribe tu mensaje aquí..."):
                 stream=True,
             )
 
-            for chunk in stream:
-                if chunk.choices[0].delta.content is not None:
+            for chunk in response:
+                if chunk.choices[0].delta and chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
                     message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
 
         except Exception as e:
             full_response = "No pude conectarme en este momento 😔"
-            st.error(f"Error al conectar con la IA: {e}")
+            st.error(f"Error al conectar con Groq: {e}")
 
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         guardar_historial(st.session_state.usuario, prompt, full_response)
@@ -132,4 +130,5 @@ with col2:
         st.rerun()
 
 st.markdown("---")
-st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + OpenAI")
+st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
