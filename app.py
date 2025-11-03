@@ -79,7 +79,7 @@ if prompt := st.chat_input("Escribe tu mensaje aquí..."):
 
         try:
             response = client.chat.completions.create(
-                model="llama-3.1-70b-versatile",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": "Eres ANIMA, un asistente emocional de la Universidad del Desarrollo. Escucha con empatía, haz preguntas suaves y deriva a un profesional si es necesario."},
                     *st.session_state.messages,
