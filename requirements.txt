@@ -1,1 +1,4 @@
-streamlit>=1.20
+streamlit
+openai
+pandas
+python-dotenv
