@@ -346,7 +346,8 @@ choice = st.session_state.get("menu_choice","Chat de ayuda")
 
 if choice == "Cerrar sesión":
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
+
 
 # Chat view
 if choice == "Chat de ayuda":
