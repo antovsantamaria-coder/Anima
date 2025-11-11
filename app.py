@@ -15,8 +15,10 @@ def obtener_respuesta(mensaje):
     try:
         response = client.chat.completions.create(
             model="llama-3.2-70b-text-preview",
-            messages=[{"role": "system", "content": "Eres un asistente empático y comprensivo de apoyo emocional de la Universidad del Desarrollo (UDD)."},
-                      {"role": "user", "content": mensaje}]
+            messages=[
+                {"role": "system", "content": "Eres un asistente empático y comprensivo de apoyo emocional de la Universidad del Desarrollo (UDD)."},
+                {"role": "user", "content": mensaje}
+            ]
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -50,10 +52,10 @@ def mostrar_menu():
             - **Motivación y energía** ☀️  
               Grupo para quienes buscan mejorar su ánimo o reencontrar motivación.
             """)
-        
+
         elif opcion == "Cerrar sesión":
             st.session_state.clear()
-            st.experimental_rerun()
+            st.rerun()  # ✅ reemplazamos experimental_rerun()
 
 
 # --- SECCIÓN DE INICIO DE SESIÓN ---
@@ -69,7 +71,7 @@ if "logged_in" not in st.session_state:
             st.session_state.usuario = correo
             st.session_state.historial = []
             st.success("Inicio de sesión exitoso 💫")
-            st.experimental_rerun()
+            st.rerun()  # ✅ reemplazamos experimental_rerun()
         else:
             st.error("Por favor, usa tu correo institucional UDD y una contraseña válida.")
     st.stop()
@@ -101,6 +103,7 @@ for msg in st.session_state.historial:
 
 st.markdown("---")
 st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
 
 
 
