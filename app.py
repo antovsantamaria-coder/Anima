@@ -14,7 +14,7 @@ def obtener_respuesta(mensaje):
     """Genera una respuesta de la IA usando Groq"""
     try:
         response = client.chat.completions.create(
-            model="llama-3.2-70b-text-preview",
+             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "Eres un asistente empático y comprensivo de apoyo emocional de la Universidad del Desarrollo (UDD)."},
                 {"role": "user", "content": mensaje}
