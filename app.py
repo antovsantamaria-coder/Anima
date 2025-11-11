@@ -5,52 +5,61 @@ import os
 # ---------------- CONFIGURACIÓN GENERAL ----------------
 st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", page_icon="💙")
 
-# --- Estilos Pasteles Personalizados ---
+# --- ESTILOS PERSONALIZADOS (fondo crema + azul pastel) ---
 st.markdown("""
 <style>
 /* Fondo general */
 [data-testid="stAppViewContainer"] {
-    background-color: #F9FAFB;
-    background-image: linear-gradient(180deg, #FDFBFB 0%, #EBEDEE 100%);
+    background-color: #FFF8F0;  /* Crema suave */
+    background-image: linear-gradient(180deg, #FFFDF8 0%, #FFF5E6 100%);
 }
 
 /* Panel lateral */
 [data-testid="stSidebar"] {
-    background-color: #F3E5F5;
+    background-color: #CBE4F9;  /* Azul pastel */
 }
 
 /* Botones */
 .stButton>button {
-    background-color: #A5D8FF;
-    color: #1A1A1A;
+    background-color: #AED9E0;
+    color: #2E2E2E;
     border-radius: 10px;
     border: none;
     font-weight: bold;
     padding: 8px 20px;
 }
 .stButton>button:hover {
-    background-color: #C8E7FF;
+    background-color: #BEE3ED;
     color: #000;
 }
 
 /* Inputs */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
     background-color: #FFFFFF;
-    border: 1px solid #D1C4E9;
+    border: 1px solid #B0BEC5;
     border-radius: 8px;
+    color: #2E2E2E;
 }
 
 /* Mensajes del chat */
 [data-testid="stChatMessageUser"] {
-    background-color: #FFF8E1;
+    background-color: #FFF3E0;
+    border-radius: 10px;
 }
 [data-testid="stChatMessageAssistant"] {
-    background-color: #E1F5FE;
+    background-color: #E3F2FD;
+    border-radius: 10px;
+}
+
+/* Títulos */
+h1, h2, h3, h4, h5, h6 {
+    color: #2E2E2E;
+    font-family: "Helvetica Neue", sans-serif;
 }
 
 /* Texto general */
-body {
-    color: #3E3E3E;
+body, p, label, span, div {
+    color: #2E2E2E !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -60,7 +69,6 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # --- FUNCIÓN PARA OBTENER RESPUESTA DE LA IA ---
 def obtener_respuesta(mensaje):
-    """Genera una respuesta de la IA usando Groq"""
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -71,8 +79,8 @@ def obtener_respuesta(mensaje):
         )
         texto = response.choices[0].message.content
 
-        # Si detecta emociones fuertes o señales de estrés, muestra WhatsApp
-        if any(palabra in mensaje.lower() for palabra in ["ansiosa", "estresada", "triste", "deprimida", "mal", "colapsada"]):
+        # Sugerir ayuda psicológica si detecta emociones negativas
+        if any(p in mensaje.lower() for p in ["ansiosa", "estresada", "triste", "deprimida", "mal", "colapsada"]):
             texto += "\n\n💬 Parece que estás pasando por un momento difícil. Si necesitas apoyo inmediato, puedes escribir a nuestro equipo en [WhatsApp de Bienestar UDD](https://wa.me/56912345678)."
         return texto
 
@@ -92,7 +100,7 @@ def encuesta_bienestar():
         if promedio < 4:
             st.warning("💛 Tus respuestas indican que podrías beneficiarte del apoyo de un profesional. ANIMA te recomienda contactar a psicología o psicopedagogía UDD.")
         elif promedio < 7:
-            st.info("💙 Parece que estás en un punto intermedio. ANIMA te acompañará para mejorar tu bienestar.")
+            st.info("💙 Estás en un punto intermedio. ANIMA te acompañará para mejorar tu bienestar.")
         else:
             st.success("🌸 ¡Excelente! Tu bienestar general parece estar bien equilibrado.")
         st.session_state.encuesta_respondida = True
@@ -131,9 +139,10 @@ def mostrar_menu():
             st.session_state.clear()
             st.rerun()
 
+
 # --- INICIO DE SESIÓN ---
 if "logged_in" not in st.session_state:
-    st.markdown("<div class='titulo'><h2>💙 ANIMA - Apoyo Emocional UDD</h2></div>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>💙 ANIMA - Apoyo Emocional UDD</h2>", unsafe_allow_html=True)
     st.subheader("Inicio de sesión")
     correo = st.text_input("Correo institucional UDD", placeholder="nombre.apellido@udd.cl")
     password = st.text_input("Contraseña", type="password")
@@ -149,6 +158,7 @@ if "logged_in" not in st.session_state:
         else:
             st.error("Por favor, usa tu correo institucional UDD y una contraseña válida.")
     st.stop()
+
 
 # --- INTERFAZ PRINCIPAL DEL CHAT ---
 mostrar_menu()
@@ -183,6 +193,7 @@ for msg in st.session_state.historial:
 
 st.markdown("---")
 st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
 
 
 
