@@ -10,14 +10,15 @@ st.markdown("""
 <style>
 /* Fondo principal */
 [data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0; /* Fondo crema */
+    background-color: #FFF8F0; /* Crema suave */
     background-image: none;
 }
 
-/* Sidebar (lateral) */
+/* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #CFE9F5; /* Azul pastel */
+    background-color: #CBE4F9; /* Azul pastel */
     color: #2E2E2E !important;
+    border: none;
 }
 
 /* Botones */
@@ -28,6 +29,7 @@ st.markdown("""
     border-radius: 8px;
     padding: 8px 18px;
     font-weight: 600;
+    text-transform: none; /* Mantiene mayúsculas/minúsculas originales */
 }
 .stButton>button:hover {
     background-color: #A9DCE2;
@@ -36,47 +38,55 @@ st.markdown("""
 /* Entradas de texto */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
     background-color: #FFFFFF;
-    border: 1px solid #DADADA;
+    border: 1px solid #E5E5E5;
     border-radius: 8px;
     color: #2E2E2E;
 }
 
 /* Mensajes del chat */
 [data-testid="stChatMessageUser"] {
-    background-color: #FFF3E0; /* Naranja claro pastel */
+    background-color: #FFF2D7; /* Amarillo crema pastel */
     color: #2E2E2E;
     border-radius: 10px;
     padding: 10px;
+    border: none;
 }
 [data-testid="stChatMessageAssistant"] {
-    background-color: #E3F2FD; /* Azul muy claro */
+    background-color: #DDEEFF; /* Azul bebé */
     color: #2E2E2E;
     border-radius: 10px;
     padding: 10px;
+    border: none;
 }
 
-/* Bloques del foro de apoyo */
+/* Bloques del foro */
 div[data-testid="stMarkdownContainer"] > p,
 div[data-testid="stMarkdownContainer"] {
-    background-color: #FFFBEA; /* Amarillo pastel */
-    color: #2E2E2E !important; /* Gris oscuro */
-    border-radius: 8px;
+    background-color: #FFF9E6; /* Amarillo pastel claro */
+    color: #2E2E2E !important;
+    border-radius: 10px;
     padding: 12px;
     border: none; /* Sin borde visible */
 }
 
-/* Títulos y texto general */
-h1, h2, h3, h4, h5, h6, p, span, div, label {
-    color: #2E2E2E !important; /* Gris oscuro para contraste */
+/* Títulos y textos */
+h1, h2, h3, h4, h5, h6 {
+    color: #2E2E2E;
     font-family: "Helvetica Neue", "Open Sans", sans-serif;
+    text-transform: none; /* Respeta las mayúsculas originales */
+}
+p, span, div, label {
+    color: #2E2E2E !important;
+    font-family: "Helvetica Neue", "Open Sans", sans-serif;
+    text-transform: none;
 }
 
-/* Quitar sombras y bordes duros */
+/* Quitar bordes duros o sombreados */
 * {
     box-shadow: none !important;
 }
 
-/* Scrollbar más suave */
+/* Scrollbar pastel */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -86,6 +96,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # --- Inicializar cliente Groq ---
