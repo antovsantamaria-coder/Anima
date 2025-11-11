@@ -1,223 +1,457 @@
+# app.py - ANIMA con Calendario Inteligente (vista mensual, recordatorios, persistencia por usuario)
 import streamlit as st
 from groq import Groq
-import json
-import os
-from datetime import date, datetime
+import os, json
+from datetime import date, datetime, timedelta
+import calendar
 
-# ---------------- CONFIGURACIÓN GENERAL ----------------
-st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", page_icon="💙")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="wide", page_icon="💙")
 
-# --- ESTILOS PERSONALIZADOS (mismo esquema que ya usas) ---
+# ---------------- FORCE LIGHT THEME + STYLES ----------------
 st.markdown("""
 <style>
-[data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0;
-    background-image: linear-gradient(180deg, #FFFDF8 0%, #FFF5E6 100%);
-}
-[data-testid="stSidebar"] {
-    background-color: #CBE4F9;
-}
-.stButton>button {
-    background-color: #AED9E0;
-    color: #2E2E2E;
-    border-radius: 10px;
-    border: none;
-    font-weight: bold;
-    padding: 8px 20px;
-}
-.stButton>button:hover {
-    background-color: #BEE3ED;
-    color: #000;
-}
-.stTextInput>div>div>input, .stTextArea>div>textarea {
-    background-color: #FFFFFF;
-    border: 1px solid #B0BEC5;
-    border-radius: 8px;
-    color: #2E2E2E;
-}
-[data-testid="stChatMessageUser"] {
-    background-color: #FFF3E0;
-    border-radius: 10px;
-}
-[data-testid="stChatMessageAssistant"] {
-    background-color: #E3F2FD;
-    border-radius: 10px;
-}
-h1, h2, h3, h4, h5, h6 {
-    color: #2E2E2E;
-    font-family: "Helvetica Neue", sans-serif;
-}
-body, p, label, span, div {
-    color: #2E2E2E !important;
-}
+:root { color-scheme: light !important; }
+[data-testid="stAppViewContainer"], body { background-color: #FFF8E7 !important; }
+[data-testid="stSidebar"] { background-color: #CBE4F9 !important; color: #333333 !important; }
+/* Buttons */
+.stButton>button { background-color: #AED9E0; color: #333333; border-radius:10px; padding:8px 18px; font-weight:600; border:none; }
+.stButton>button:hover { background-color:#BEE3ED; }
+/* Inputs */
+.stTextInput>div>div>input, .stTextArea>div>textarea { background:#FFFFFF; color:#333333; border:1px solid #EADFCB; border-radius:8px; }
+/* Chat input area */
+[data-baseweb="textarea"] textarea { background-color:#FFFFFF !important; color:#333333 !important; border:1px solid #EADFCB !important; border-radius:20px !important; padding:10px 14px !important; }
+/* Chat messages neutral */
+[data-testid="stChatMessageUser"], [data-testid="stChatMessageAssistant"] { background-color: transparent !important; color:#333333 !important; border:none !important; padding:0 !important; }
+/* Calendar cells */
+.calendar-cell { padding:8px; vertical-align: top; }
+.calendar-day-num { font-weight:600; color:#333333; margin-bottom:6px; }
+.event-pill { display:inline-block; padding:4px 8px; border-radius:8px; font-size:12px; margin:2px 0; color:#222; }
+/* Keep text color readable and avoid forcing uppercase */
+h1,h2,h3,h4,h5,h6,p,div,span,label { color:#333333 !important; text-transform: none !important; font-family: "Helvetica Neue", "Open Sans", sans-serif; }
+/* Remove heavy shadows / borders */
+* { box-shadow: none !important; }
+/* Floating menu button */
+#menu-btn { position: fixed; top: 18px; left: 18px; z-index: 999; background:#AED9E0; color:#333333; border:none; padding:6px 10px; border-radius:10px; font-weight:700; cursor:pointer; }
+/* Scrollbar pastel */
+::-webkit-scrollbar { width:8px; }
+::-webkit-scrollbar-thumb { background-color:#EBDDC9; border-radius:4px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Inicializar cliente Groq ---
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Floating menu button (toggles the sidebar)
+if "menu_open" not in st.session_state:
+    st.session_state.menu_open = False
 
-# --- FUNCIONES AUXILIARES ---
-def guardar_calendario(usuario, data):
-    archivo = f"calendario_{usuario}.json"
-    with open(archivo, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+def toggle_menu():
+    st.session_state.menu_open = not st.session_state.menu_open
 
-def cargar_calendario(usuario):
-    archivo = f"calendario_{usuario}.json"
-    if os.path.exists(archivo):
-        with open(archivo, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+if st.button("☰", key="menu_button"):
+    toggle_menu()
 
-# --- FUNCIÓN DE RESPUESTA DE IA ---
-def obtener_respuesta(mensaje):
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "Eres ANIMA, una IA empática y amable de apoyo emocional para estudiantes de la Universidad del Desarrollo (UDD)."},
-                {"role": "user", "content": mensaje}
-            ]
-        )
-        texto = response.choices[0].message.content
-        if any(p in mensaje.lower() for p in ["estresada", "triste", "mal", "colapsada", "ansiosa"]):
-            texto += "\n\n💬 Si necesitas apoyo inmediato, puedes escribir a nuestro equipo en [WhatsApp de Bienestar UDD](https://wa.me/56912345678)."
-        return texto
-    except Exception as e:
-        return f"⚠️ Error al conectar con la IA: {e}"
-
-# --- ENCUESTA DE BIENESTAR ---
-def encuesta_bienestar():
-    st.subheader("💭 Antes de comenzar, responde esta breve encuesta:")
-    energia = st.slider("¿Cómo evaluarías tu nivel de energía hoy?", 0, 10, 5)
-    animo = st.slider("¿Qué tan animado/a te sientes?", 0, 10, 5)
-    concentracion = st.slider("¿Qué tan concentrado/a te has sentido últimamente?", 0, 10, 5)
-    motivacion = st.slider("¿Qué tan motivado/a te sientes con tus estudios?", 0, 10, 5)
-
-    if st.button("Enviar respuestas"):
-        promedio = (energia + animo + concentracion + motivacion) / 4
-        if promedio < 4:
-            st.warning("💛 Tus respuestas indican que podrías beneficiarte del apoyo de un profesional.")
-        elif promedio < 7:
-            st.info("💙 Estás en un punto intermedio. ANIMA te acompañará para mejorar tu bienestar.")
-        else:
-            st.success("🌸 ¡Excelente! Tu bienestar general parece estar bien equilibrado.")
-        st.session_state.encuesta_respondida = True
-
-# --- CALENDARIO INTELIGENTE ---
-def calendario_inteligente(usuario):
-    st.title("🗓️ Calendario Inteligente ANIMA")
-    st.markdown("Organiza tu tiempo y recibe recordatorios personalizados 💙")
-
-    data = cargar_calendario(usuario)
-    color_eventos = st.color_picker("🎨 Elige el color para tus eventos:", "#AED9E0")
-
-    with st.expander("➕ Agregar nuevo evento"):
-        titulo = st.text_input("Título del evento")
-        fecha = st.date_input("Fecha", value=date.today())
-        descripcion = st.text_area("Descripción o detalle")
-        if st.button("Agregar evento"):
-            nuevo = {"titulo": titulo, "fecha": str(fecha), "descripcion": descripcion, "color": color_eventos}
-            data.append(nuevo)
-            guardar_calendario(usuario, data)
-            st.success("✅ Evento agregado correctamente.")
-
-    st.markdown("---")
-    st.subheader("📅 Tus eventos:")
-
-    if data:
-        for evento in data:
-            st.markdown(f"""
-            <div style='background-color:{evento["color"]};padding:10px;border-radius:10px;margin-bottom:10px;'>
-                <b>{evento["titulo"]}</b><br>
-                📅 {evento["fecha"]}<br>
-                📝 {evento["descripcion"]}
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("Aún no tienes eventos en tu calendario.")
-
-    # --- ANÁLISIS INTELIGENTE DE EVENTOS ---
-    if data:
-        hoy = str(date.today())
-        eventos_hoy = [e for e in data if e["fecha"] == hoy]
-        total = len(data)
-
-        st.markdown("---")
-        st.subheader("💡 Recomendaciones de ANIMA:")
-
-        if len(eventos_hoy) > 3:
-            st.warning("🌙 Tienes muchos eventos hoy. Recuerda hacer pausas breves y cuidar tu energía.")
-        elif len(eventos_hoy) == 0:
-            st.info("📖 No tienes eventos para hoy. Puedes aprovechar para descansar o planificar la semana.")
-        elif any("prueba" in e["titulo"].lower() or "certamen" in e["titulo"].lower() for e in data):
-            st.warning("🧠 Veo evaluaciones en tu agenda. Intenta dormir bien y preparar pausas cortas antes del estudio.")
-        elif total > 10:
-            st.info("📅 Tienes una agenda muy activa. ANIMA te recomienda agendar momentos de autocuidado.")
-
-# --- MENÚ LATERAL ---
-def mostrar_menu():
+# show/hide sidebar
+if st.session_state.menu_open:
     with st.sidebar:
         st.title("☰ Menú ANIMA")
-        opcion = st.radio("Selecciona una opción:", ["Chat de ayuda", "Historial", "Grupos de apoyo", "Calendario inteligente", "Cerrar sesión"])
+        choice = st.radio("Ir a:", ["Chat de ayuda", "Historial", "Grupos de apoyo", "Calendario ANIMA", "Cerrar sesión"])
+        st.session_state.menu_choice = choice
+        st.markdown("---")
+        st.caption("ANIMA · Apoyo Emocional UDD 💙")
 
-        if opcion == "Chat de ayuda":
-            st.session_state.vista = "chat"
-        elif opcion == "Historial":
-            st.session_state.vista = "historial"
-        elif opcion == "Grupos de apoyo":
-            st.session_state.vista = "foros"
-        elif opcion == "Calendario inteligente":
-            st.session_state.vista = "calendario"
-        elif opcion == "Cerrar sesión":
-            st.session_state.clear()
-            st.rerun()
+# ---------------- GROQ CLIENT (if not available, app still runs but IA responses will show error) ----------------
+client = None
+try:
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+except Exception:
+    client = None
 
-# --- INICIO DE SESIÓN ---
+def ai_reply(prompt):
+    """Llamada segura a Groq; si falla, devuelve texto por defecto."""
+    if client is None:
+        return "ANIMA no puede conectarse al servicio de IA en este momento. Igual puedo ayudarte con tu calendario."
+    try:
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role":"system","content":"Eres ANIMA, un asistente empático de la UDD que ayuda a planificar y cuidar el bienestar."},
+                      {"role":"user","content":prompt}]
+        )
+        return resp.choices[0].message.content
+    except Exception as e:
+        return f"ANIMA no pudo generar respuesta automática ({e})."
+
+# ---------------- Persistence utils ----------------
+def user_file(username):
+    safe = username.replace(" ", "_")
+    return f"calendar_{safe}.json"
+
+def load_user_data(username):
+    f = user_file(username)
+    if os.path.exists(f):
+        try:
+            with open(f,"r",encoding="utf-8") as fh:
+                return json.load(fh)
+        except Exception:
+            return {"events": [], "prefs": {}}
+    else:
+        return {"events": [], "prefs": {}}
+
+def save_user_data(username, data):
+    f = user_file(username)
+    with open(f,"w",encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=4)
+
+# ---------------- Login & Session init ----------------
 if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "menu_choice" not in st.session_state:
+    st.session_state.menu_choice = "Chat de ayuda"
+if "survey_done" not in st.session_state:
+    st.session_state.survey_done = False
+
+def login_block():
     st.markdown("<h2 style='text-align:center;'>💙 ANIMA - Apoyo Emocional UDD</h2>", unsafe_allow_html=True)
     st.subheader("Inicio de sesión")
     correo = st.text_input("Correo institucional UDD", placeholder="nombre.apellido@udd.cl")
     password = st.text_input("Contraseña", type="password")
-
     if st.button("Iniciar sesión"):
-        if correo.endswith("@udd.cl") and len(password) > 3:
+        if correo and correo.endswith("@udd.cl") and len(password) > 3:
             st.session_state.logged_in = True
-            st.session_state.usuario = correo.split("@")[0]
-            st.session_state.historial = []
-            st.session_state.encuesta_respondida = False
+            st.session_state.user = correo.split("@")[0]
             st.success("Inicio de sesión exitoso 💫")
-            st.rerun()
+            st.experimental_rerun()
         else:
-            st.error("Por favor, usa tu correo institucional UDD y una contraseña válida.")
+            st.error("Usa un correo institucional válido (@udd.cl) y una contraseña de al menos 4 caracteres.")
     st.stop()
 
-# --- INTERFAZ PRINCIPAL ---
-mostrar_menu()
-vista = st.session_state.get("vista", "chat")
+# if not logged in, show login
+if not st.session_state.logged_in:
+    login_block()
 
-if vista == "chat":
+# load user data
+user = st.session_state.user
+user_data = load_user_data(user)  # {"events":[...], "prefs": {...}}
+
+# ensure structure
+if "events" not in user_data:
+    user_data["events"] = []
+if "prefs" not in user_data:
+    user_data["prefs"] = {}
+
+# default color preference
+if "color_event" not in user_data["prefs"]:
+    user_data["prefs"]["color_event"] = "#AED9E0"
+if "calendar_view" not in user_data["prefs"]:
+    user_data["prefs"]["calendar_view"] = "Mensual"
+
+# ---------------- Survey (encuesta previa) ----------------
+def survey_block():
+    st.subheader("💭 Encuesta breve de bienestar")
+    energia = st.slider("Nivel de energía (0-10)", 0, 10, 5, key="s_energia")
+    animo = st.slider("Ánimo (0-10)", 0, 10, 5, key="s_animo")
+    concentracion = st.slider("Concentración (0-10)", 0, 10, 5, key="s_conc")
+    motivacion = st.slider("Motivación (0-10)", 0, 10, 5, key="s_motiv")
+    if st.button("Enviar encuesta"):
+        prom = (energia + animo + concentracion + motivacion)/4
+        st.session_state.survey_done = True
+        # Keep summary in session for suggestions later
+        st.session_state.survey_summary = {"energia":energia,"animo":animo,"conc":concentracion,"motiv":motivacion,"prom":prom}
+        st.success("Gracias. ANIMA usará esto para sugerir una planificación equilibrada.")
+        st.experimental_rerun()
+    st.stop()
+
+# If not done survey, show it on first visit to calendar or chat
+if not st.session_state.survey_done:
+    survey_block()
+
+# ---------------- Helpers for calendar ----------------
+def parse_date(d):
+    if isinstance(d, str):
+        return datetime.fromisoformat(d).date()
+    if isinstance(d, date):
+        return d
+    return None
+
+def events_on_day(events, d):
+    dstr = str(d)
+    return [e for e in events if e.get("date")==dstr]
+
+def upcoming_events(events, days=3):
+    today = date.today()
+    out = []
+    for e in events:
+        ed = parse_date(e.get("date"))
+        if ed is None:
+            continue
+        delta = (ed - today).days
+        if 0 <= delta <= days:
+            out.append((delta,e))
+    out.sort(key=lambda x: x[0])
+    return out
+
+def month_matrix(year, month):
+    cal = calendar.Calendar(firstweekday=0)  # Monday=0? here Sunday=6; but we'll use default
+    weeks = cal.monthdayscalendar(year, month)
+    return weeks
+
+# ---------------- Calendar UI render (monthly grid) ----------------
+def render_month_view(events, year, month, prefs):
+    # Build mapping of date -> list events
+    events_map = {}
+    for e in events:
+        ed = e.get("date")
+        if ed:
+            events_map.setdefault(ed, []).append(e)
+
+    weeks = month_matrix(year, month)
+    month_name = calendar.month_name[month]
+    html = f"<div style='width:100%'><h3 style='margin-bottom:6px'>{month_name} {year}</h3>"
+    html += "<table style='width:100%; border-collapse:collapse;'>"
+    # header weekdays
+    html += "<tr>"
+    for wd in ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:
+        html += f"<th style='text-align:left;padding:8px;color:#2B2B2B'>{wd}</th>"
+    html += "</tr>"
+    # weeks
+    for wk in weeks:
+        html += "<tr>"
+        for day in wk:
+            if day == 0:
+                html += "<td class='calendar-cell' style='height:90px;background:transparent'></td>"
+            else:
+                ddate = date(year, month, day)
+                key = str(ddate)
+                pills_html = ""
+                if key in events_map:
+                    # show up to 2 event pills
+                    for ev in events_map[key][:2]:
+                        title_short = ev.get("title","").replace("<","").replace(">","")
+                        color = ev.get("color", prefs.get("color_event","#AED9E0"))
+                        pills_html += f"<div class='event-pill' style='background:{color};color:#222;margin-top:4px;'>{title_short[:18]}</div>"
+                    if len(events_map[key])>2:
+                        pills_html += f"<div style='font-size:12px;color:#6b6b6b;margin-top:4px;'>+{len(events_map[key])-2} more</div>"
+                html += f"<td class='calendar-cell' style='vertical-align:top; padding:8px; height:90px;'>"
+                html += f"<div class='calendar-day-num'>{day}</div>{pills_html}</td>"
+        html += "</tr>"
+    html += "</table></div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+# ---------------- Smart recommendations ----------------
+def smart_recommendations(events, survey):
+    recs = []
+    today = date.today()
+    # upcoming 3 days
+    up = upcoming_events(events, days=3)
+    if up:
+        for delta, e in up:
+            d = parse_date(e["date"])
+            when = "hoy" if delta==0 else f"en {delta} día(s)"
+            recs.append(f"🔔 {when}: {e['title']}. {('Hora: ' + e.get('time')) if e.get('time') else ''}")
+    # overloaded days
+    # compute counts per day for coming week
+    counts = {}
+    for e in events:
+        ed = parse_date(e.get("date"))
+        if ed:
+            if 0 <= (ed - today).days <= 7:
+                counts.setdefault(str(ed),0)
+                counts[str(ed)] += 1
+    overloaded = [d for d,c in counts.items() if c >= 3]
+    if overloaded:
+        recs.append("⚠️ Noté días muy cargados esta semana. ANIMA sugiere incluir pausas de 10-15 minutos cada 90 minutos de estudio.")
+    # based on survey avg (if present)
+    if survey:
+        prom = survey.get("prom", None)
+        if prom is not None and prom < 4:
+            recs.append("💛 Tu encuesta indica baja energía. ANIMA recomienda planificar bloques más cortos de estudio y más descansos.")
+    # suggestions based on keywords
+    keywords = ["prueba","certamen","examen","entrega","control"]
+    if any(any(k in e.get("title","").lower() for k in keywords) for e in events):
+        recs.append("🧠 Tienes evaluaciones próximas: intenta programar repasos cortos y sueño reparador la noche anterior.")
+    return recs
+
+# ---------------- Calendar Editor UI ----------------
+def calendar_editor(user_data):
+    st.subheader("Configuración y eventos")
+    prefs = user_data.get("prefs", {})
+    # color preference
+    col = st.color_picker("Color por defecto para nuevos eventos", prefs.get("color_event","#AED9E0"))
+    prefs["color_event"] = col
+    user_data["prefs"] = prefs
+
+    st.markdown("### Agregar evento")
+    c1, c2 = st.columns(2)
+    with c1:
+        title = st.text_input("Título", key="evt_title")
+        ev_date = st.date_input("Fecha", value=date.today(), key="evt_date")
+    with c2:
+        ev_time = st.text_input("Hora (opcional, ej. 14:30)", key="evt_time")
+        desc = st.text_area("Descripción (opcional)", key="evt_desc")
+
+    add_clicked = st.button("Agregar evento")
+    if add_clicked:
+        if not title.strip():
+            st.error("El evento necesita un título.")
+        else:
+            new = {"title": title.strip(), "date": str(ev_date), "time": ev_time.strip(), "desc": desc.strip(), "color": prefs.get("color_event","#AED9E0")}
+            user_data.setdefault("events", []).append(new)
+            save_user_data(user, user_data)
+            st.success("Evento agregado correctamente.")
+            st.experimental_rerun()
+
+    st.markdown("---")
+    st.subheader("Tus eventos (editar / eliminar)")
+    events = user_data.get("events", [])
+    if not events:
+        st.info("No tienes eventos todavía.")
+    else:
+        # list with delete buttons
+        for idx, e in enumerate(events):
+            st.markdown(f"**{e.get('title')}** — {e.get('date')} {(' - ' + e['time']) if e.get('time') else ''}")
+            st.write(e.get("desc",""))
+            col1, col2 = st.columns([0.1,0.9])
+            with col1:
+                if st.button("Eliminar", key=f"del_{idx}"):
+                    events.pop(idx)
+                    user_data["events"] = events
+                    save_user_data(user, user_data)
+                    st.success("Evento eliminado.")
+                    st.experimental_rerun()
+            with col2:
+                if st.button("Editar", key=f"edit_{idx}"):
+                    # bring up edit form
+                    new_title = st.text_input("Nuevo título", value=e.get("title"), key=f"nt_{idx}")
+                    new_date = st.date_input("Nueva fecha", value=parse_date(e.get("date")), key=f"nd_{idx}")
+                    new_time = st.text_input("Nueva hora", value=e.get("time",""), key=f"ntm_{idx}")
+                    new_desc = st.text_area("Nueva descripción", value=e.get("desc",""), key=f"ndesc_{idx}")
+                    if st.button("Guardar cambios", key=f"save_{idx}"):
+                        events[idx] = {"title": new_title, "date": str(new_date), "time": new_time, "desc": new_desc, "color": e.get("color", prefs.get("color_event"))}
+                        user_data["events"] = events
+                        save_user_data(user, user_data)
+                        st.success("Cambios guardados.")
+                        st.experimental_rerun()
+
+# ---------------- MAIN VIEWS ----------------
+# Sidebar fallback (when menu_open False)
+if not st.session_state.menu_open:
+    # keep a small sidebar to navigate
+    with st.sidebar:
+        st.title("ANIMA")
+        choice = st.radio("Ir a:", ["Chat de ayuda", "Historial", "Grupos de apoyo", "Calendario ANIMA", "Cerrar sesión"])
+        st.session_state.menu_choice = choice
+
+choice = st.session_state.get("menu_choice","Chat de ayuda")
+
+if choice == "Cerrar sesión":
+    st.session_state.clear()
+    st.experimental_rerun()
+
+# Chat view
+if choice == "Chat de ayuda":
     st.title("💬 Chat de apoyo emocional ANIMA")
-    if not st.session_state.encuesta_respondida:
-        encuesta_bienestar()
-        st.stop()
+    st.write(f"Hola {user}, soy ANIMA. ¿Cómo te sientes hoy?")
+    # quick suggestions from calendar when entering chat
+    recs = smart_recommendations(user_data.get("events",[]), st.session_state.get("survey_summary", None))
+    if recs:
+        st.markdown("### Recomendaciones rápidas de ANIMA")
+        for r in recs[:5]:
+            st.info(r)
+    # chat input (simple)
+    user_msg = st.chat_input("Escribe aquí tu mensaje...")
+    if user_msg:
+        reply = ai_reply(user_msg)
+        # keep minimal chat history in session
+        if "chat_hist" not in st.session_state:
+            st.session_state.chat_hist = []
+        st.session_state.chat_hist.append({"user":user_msg, "bot":reply})
+    # show chat history
+    if "chat_hist" in st.session_state:
+        for m in st.session_state.chat_hist:
+            with st.chat_message("user"):
+                st.write(m["user"])
+            with st.chat_message("assistant"):
+                st.write(m["bot"])
 
-    st.write(f"Hola 👋 {st.session_state.usuario}, soy **ANIMA**. ¿Cómo te sientes hoy?")
-    mensaje_usuario = st.chat_input("Escribe aquí tu mensaje...")
-    if mensaje_usuario:
-        respuesta = obtener_respuesta(mensaje_usuario)
-        st.session_state.historial.append({"user": mensaje_usuario, "bot": respuesta})
-    for msg in st.session_state.historial:
-        with st.chat_message("user"):
-            st.write(msg["user"])
-        with st.chat_message("assistant"):
-            st.write(msg["bot"])
+# Calendar view
+elif choice == "Calendario ANIMA":
+    st.title("🗓️ Calendario ANIMA")
+    # top: quick reminders
+    reminders = upcoming_events(user_data.get("events",[]), days=3)
+    if reminders:
+        st.subheader("🔔 Recordatorios próximos")
+        for delta, e in reminders:
+            when = "Hoy" if delta==0 else f"En {delta} día(s)"
+            st.info(f"{when}: {e.get('title')} — {e.get('date')} {('(' + e.get('time') + ')') if e.get('time') else ''}")
 
-elif vista == "calendario":
-    calendario_inteligente(st.session_state.usuario)
+    st.markdown("---")
+    # settings and editor
+    calendar_editor(user_data)
 
-st.markdown("---")
-st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+    st.markdown("---")
+    # monthly grid
+    st.subheader("Vista mensual")
+    # navigation
+    if "cal_year" not in st.session_state:
+        st.session_state.cal_year = date.today().year
+    if "cal_month" not in st.session_state:
+        st.session_state.cal_month = date.today().month
+
+    nav1, nav2, nav3 = st.columns([1,2,1])
+    with nav1:
+        if st.button("◀️ Mes anterior"):
+            m = st.session_state.cal_month - 1
+            y = st.session_state.cal_year
+            if m < 1:
+                m = 12; y -= 1
+            st.session_state.cal_month = m; st.session_state.cal_year = y
+    with nav2:
+        st.markdown(f"### {calendar.month_name[st.session_state.cal_month]} {st.session_state.cal_year}")
+    with nav3:
+        if st.button("Mes siguiente ▶️"):
+            m = st.session_state.cal_month + 1
+            y = st.session_state.cal_year
+            if m > 12:
+                m = 1; y += 1
+            st.session_state.cal_month = m; st.session_state.cal_year = y
+
+    render_month_view(user_data.get("events",[]), st.session_state.cal_year, st.session_state.cal_month, user_data.get("prefs",{}))
+
+    st.markdown("---")
+    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
+# Foros view (simple area)
+elif choice == "Grupos de apoyo":
+    st.title("🤝 Grupos de apoyo UDD")
+    # simple local forum (session-based)
+    if "forums" not in st.session_state:
+        st.session_state.forums = {"Bienestar y salud mental": [], "Apoyo entre compañeros": [], "Motivación y energía": []}
+    group = st.selectbox("Selecciona grupo", list(st.session_state.forums.keys()))
+    st.markdown(f"### Foro: {group}")
+    for msg in st.session_state.forums[group]:
+        st.markdown(f"**{msg['author']} ({msg['time']}):** {msg['text']}")
+    new_msg = st.text_area("Escribe un comentario")
+    if st.button("Publicar comentario"):
+        if new_msg.strip():
+            st.session_state.forums[group].append({"author":user,"time":datetime.now().strftime("%H:%M"),"text":new_msg.strip()})
+            st.success("Publicado.")
+            st.experimental_rerun()
+
+# Historial view
+elif choice == "Historial":
+    st.title("🕒 Historial de conversaciones")
+    hist = st.session_state.get("historial", [])
+    if not hist:
+        st.info("Aún no hay historial.")
+    else:
+        for h in hist:
+            st.markdown(f"**Tú:** {h.get('user')}")
+            st.markdown(f"**ANIMA:** {h.get('bot')}")
+            st.markdown("---")
+
+# save any changes to user_data at end
+save_user_data(user, user_data)
+
 
 
 
