@@ -1,198 +1,139 @@
 import streamlit as st
-from groq import Groq
-import os
+import requests
 
-# ---------------- CONFIGURACIÓN GENERAL ----------------
-st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", page_icon="💙")
+st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="wide")
 
-# --- ESTILOS PERSONALIZADOS (fondo crema + azul pastel) ---
+# --- Estilos personalizados ---
 st.markdown("""
-<style>
-/* Fondo general */
-[data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0;  /* Crema suave */
-    background-image: linear-gradient(180deg, #FFFDF8 0%, #FFF5E6 100%);
-}
-
-/* Panel lateral */
-[data-testid="stSidebar"] {
-    background-color: #CBE4F9;  /* Azul pastel */
-}
-
-/* Botones */
-.stButton>button {
-    background-color: #AED9E0;
-    color: #2E2E2E;
-    border-radius: 10px;
-    border: none;
-    font-weight: bold;
-    padding: 8px 20px;
-}
-.stButton>button:hover {
-    background-color: #BEE3ED;
-    color: #000;
-}
-
-/* Inputs */
-.stTextInput>div>div>input, .stTextArea>div>textarea {
-    background-color: #FFFFFF;
-    border: 1px solid #B0BEC5;
-    border-radius: 8px;
-    color: #2E2E2E;
-}
-
-/* Mensajes del chat */
-[data-testid="stChatMessageUser"] {
-    background-color: #FFF3E0;
-    border-radius: 10px;
-}
-[data-testid="stChatMessageAssistant"] {
-    background-color: #E3F2FD;
-    border-radius: 10px;
-}
-
-/* Títulos */
-h1, h2, h3, h4, h5, h6 {
-    color: #2E2E2E;
-    font-family: "Helvetica Neue", sans-serif;
-}
-
-/* Texto general */
-body, p, label, span, div {
-    color: #2E2E2E !important;
-}
-</style>
+    <style>
+        body {
+            background-color: #FFF8E7; /* Fondo crema */
+            color: #2B2B2B;
+            font-family: 'Arial', sans-serif;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #A7C7E7; /* Azul pastel */
+        }
+        .stButton>button {
+            background-color: #A7C7E7;
+            color: #2B2B2B;
+            border-radius: 10px;
+            border: none;
+            padding: 8px 16px;
+        }
+        .chat-bubble-user {
+            background-color: #DDEBF7;
+            color: #2B2B2B;
+            border-radius: 12px;
+            padding: 8px 15px;
+            margin-bottom: 6px;
+        }
+        .chat-bubble-ai {
+            background-color: #F4F1ED;
+            color: #2B2B2B;
+            border-radius: 12px;
+            padding: 8px 15px;
+            margin-bottom: 6px;
+            border: 1px solid #D8CFC4;
+        }
+        .forum-card {
+            background-color: #F4F1ED;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-# --- Inicializar cliente Groq ---
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# --- FUNCIÓN PARA OBTENER RESPUESTA DE LA IA ---
-def obtener_respuesta(mensaje):
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "Eres ANIMA, una IA empática y amable de apoyo emocional para estudiantes de la Universidad del Desarrollo (UDD)."},
-                {"role": "user", "content": mensaje}
-            ]
-        )
-        texto = response.choices[0].message.content
-
-        # Sugerir ayuda psicológica si detecta emociones negativas
-        if any(p in mensaje.lower() for p in ["ansiosa", "estresada", "triste", "deprimida", "mal", "colapsada"]):
-            texto += "\n\n💬 Parece que estás pasando por un momento difícil. Si necesitas apoyo inmediato, puedes escribir a nuestro equipo en [WhatsApp de Bienestar UDD](https://wa.me/56912345678)."
-        return texto
-
-    except Exception as e:
-        return f"⚠️ Error al conectar con la IA: {e}"
-
-# --- ENCUESTA DE BIENESTAR ---
-def encuesta_bienestar():
-    st.subheader("💭 Antes de comenzar, responde esta breve encuesta:")
-    energia = st.slider("¿Cómo evaluarías tu nivel de energía hoy?", 0, 10, 5)
-    animo = st.slider("¿Qué tan animado/a te sientes?", 0, 10, 5)
-    concentracion = st.slider("¿Qué tan concentrado/a te has sentido últimamente?", 0, 10, 5)
-    motivacion = st.slider("¿Qué tan motivado/a te sientes con tus estudios?", 0, 10, 5)
-
-    if st.button("Enviar respuestas"):
-        promedio = (energia + animo + concentracion + motivacion) / 4
-        if promedio < 4:
-            st.warning("💛 Tus respuestas indican que podrías beneficiarte del apoyo de un profesional. ANIMA te recomienda contactar a psicología o psicopedagogía UDD.")
-        elif promedio < 7:
-            st.info("💙 Estás en un punto intermedio. ANIMA te acompañará para mejorar tu bienestar.")
-        else:
-            st.success("🌸 ¡Excelente! Tu bienestar general parece estar bien equilibrado.")
-        st.session_state.encuesta_respondida = True
-
-
-# --- MENÚ LATERAL ---
-def mostrar_menu():
-    with st.sidebar:
-        st.title("☰ Menú ANIMA")
-        opcion = st.radio("Selecciona una opción:", ["Chat de ayuda", "Historial", "Grupos de apoyo", "Cerrar sesión"])
-
-        if opcion == "Historial":
-            st.subheader("🗂️ Historial de conversaciones")
-            if "historial" in st.session_state and st.session_state.historial:
-                for msg in st.session_state.historial:
-                    st.markdown(f"**Tú:** {msg['user']}")
-                    st.markdown(f"**ANIMA:** {msg['bot']}")
-                    st.markdown("---")
-            else:
-                st.info("No hay conversaciones previas aún.")
-
-        elif opcion == "Grupos de apoyo":
-            st.subheader("👥 Grupos de ayuda entre estudiantes UDD")
-            grupo = st.selectbox("Selecciona un grupo para unirte:", [
-                "Bienestar y salud mental 🧠",
-                "Apoyo entre compañeros 🤝",
-                "Motivación y energía ☀️"
-            ])
-            st.markdown(f"### Foro del grupo: {grupo}")
-            comentario = st.text_area("Escribe un mensaje para el grupo:")
-            if st.button("Publicar"):
-                st.success("✅ Tu mensaje fue publicado en el foro.")
-            st.info("💬 Aquí podrás ver y responder a otros mensajes del grupo próximamente.")
-
-        elif opcion == "Cerrar sesión":
-            st.session_state.clear()
-            st.rerun()
-
-
-# --- INICIO DE SESIÓN ---
+# --- Estados de sesión ---
 if "logged_in" not in st.session_state:
-    st.markdown("<h2 style='text-align:center;'>💙 ANIMA - Apoyo Emocional UDD</h2>", unsafe_allow_html=True)
-    st.subheader("Inicio de sesión")
-    correo = st.text_input("Correo institucional UDD", placeholder="nombre.apellido@udd.cl")
-    password = st.text_input("Contraseña", type="password")
+    st.session_state.logged_in = False
+if "survey_done" not in st.session_state:
+    st.session_state.survey_done = False
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "menu_visible" not in st.session_state:
+    st.session_state.menu_visible = False
+
+# --- Función para alternar menú ---
+def toggle_menu():
+    st.session_state.menu_visible = not st.session_state.menu_visible
+
+# --- Botón de menú hamburguesa ---
+col1, col2 = st.columns([0.1, 0.9])
+with col1:
+    if st.button("☰", key="menu_button"):
+        toggle_menu()
+
+# --- Menú lateral ocultable ---
+if st.session_state.menu_visible:
+    with st.sidebar:
+        st.header("📘 Menú")
+        st.markdown("**Opciones:**")
+        if st.button("🏠 Cerrar menú"):
+            st.session_state.menu_visible = False
+            st.experimental_rerun()
+        st.button("🕓 Historial")
+        st.subheader("🤝 Grupos de apoyo")
+        grupos = ["Ansiedad y Estrés", "Motivación y Hábitos", "Dificultades Académicas", "Autoestima y Confianza"]
+        for g in grupos:
+            st.markdown(f"<div class='forum-card'><b>{g}</b><br><i>Comparte experiencias y apóyate con otros estudiantes UDD.</i></div>", unsafe_allow_html=True)
+
+# --- Inicio de sesión ---
+if not st.session_state.logged_in:
+    st.title("💙 Bienvenida/o a ANIMA - Apoyo Emocional UDD")
+    user = st.text_input("Correo UDD:")
+    password = st.text_input("Contraseña:", type="password")
 
     if st.button("Iniciar sesión"):
-        if correo.endswith("@udd.cl") and len(password) > 3:
+        if user.endswith("@udd.cl") and password:
             st.session_state.logged_in = True
-            st.session_state.usuario = correo
-            st.session_state.historial = []
-            st.session_state.encuesta_respondida = False
-            st.success("Inicio de sesión exitoso 💫")
-            st.rerun()
+            st.experimental_rerun()
         else:
-            st.error("Por favor, usa tu correo institucional UDD y una contraseña válida.")
+            st.error("Debes ingresar un correo institucional válido (terminado en @udd.cl).")
     st.stop()
 
-
-# --- INTERFAZ PRINCIPAL DEL CHAT ---
-mostrar_menu()
-
-st.title("💬 Chat de apoyo emocional ANIMA")
-
-# Mostrar encuesta si aún no se ha respondido
-if "encuesta_respondida" not in st.session_state or not st.session_state.encuesta_respondida:
-    encuesta_bienestar()
+# --- Encuesta inicial ---
+if not st.session_state.survey_done:
+    st.title("🧠 Evaluación inicial de bienestar")
+    mood = st.selectbox("¿Cómo te sientes hoy?", ["Feliz", "Triste", "Ansioso/a", "Cansado/a", "Motivado/a"])
+    energy = st.slider("¿Cómo evaluarías tu nivel de energía hoy?", 1, 10, 5)
+    focus = st.slider("¿Qué tan concentrado/a te has sentido últimamente?", 1, 10, 5)
+    sleep = st.selectbox("¿Has dormido bien esta semana?", ["Sí", "No"])
+    
+    if st.button("Enviar respuestas"):
+        st.session_state.survey_done = True
+        st.success("Gracias por responder. ANIMA usará esta información para personalizar tu apoyo 💬")
+        st.experimental_rerun()
     st.stop()
 
-# Saludo inicial
-st.write(f"Hola 👋 {st.session_state.usuario.split('@')[0]}, soy **ANIMA**, tu asistente emocional UDD. ¿Cómo te sientes hoy?")
+# --- Chat principal ---
+st.title("💬 Chat de apoyo ANIMA")
 
-# Inicializar historial
-if "historial" not in st.session_state:
-    st.session_state.historial = []
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        st.markdown(f"<div class='chat-bubble-user'>{msg['content']}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='chat-bubble-ai'>{msg['content']}</div>", unsafe_allow_html=True)
 
-# Entrada del usuario
-mensaje_usuario = st.chat_input("Escribe aquí tu mensaje...")
+user_input = st.text_input("Escribe tu mensaje...")
 
-if mensaje_usuario:
-    respuesta = obtener_respuesta(mensaje_usuario)
-    st.session_state.historial.append({"user": mensaje_usuario, "bot": respuesta})
-
-# Mostrar historial
-for msg in st.session_state.historial:
-    with st.chat_message("user"):
-        st.write(msg["user"])
-    with st.chat_message("assistant"):
-        st.write(msg["bot"])
+if st.button("Enviar"):
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        # --- IA simulada (puedes reemplazar con Groq u OpenAI) ---
+        ai_response = (
+            "Gracias por compartir cómo te sientes 💬. "
+            "Si necesitas ayuda urgente, contacta a nuestro equipo en "
+            "[WhatsApp](https://wa.me/56912345678). 💙"
+        )
+        st.session_state.messages.append({"role": "assistant", "content": ai_response})
+        st.experimental_rerun()
 
 st.markdown("---")
 st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
 
 
 
