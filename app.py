@@ -9,115 +9,100 @@ st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", 
 st.markdown("""
 <style>
 
-/* Fondo general */
+/* Fondo principal */
 [data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0; /* crema */
-    background-image: none;
+    background-color: #FFF8F0;
 }
 
 /* Barra lateral */
 [data-testid="stSidebar"] {
-    background-color: #D7E8F7; /* azul bebé pastel */
+    background-color: #D7E8F7;
     color: #3A3A3A;
     border: none;
 }
 
 /* Botones */
 .stButton>button {
-    background-color: #B8E0D2; /* verde agua pastel */
+    background-color: #B8E0D2;
     color: #3A3A3A;
     border: none;
     border-radius: 10px;
     font-weight: 600;
-    padding: 8px 18px;
 }
 .stButton>button:hover {
     background-color: #A3D9C9;
 }
 
-/* Input de texto */
+/* Entradas de texto */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
-    background-color: #FFF;
+    background-color: #FFFFFF;
     border: 1px solid #EBDDC9;
-    border-radius: 10px;
     color: #3A3A3A;
+    border-radius: 10px;
 }
 
-/* Chat y foro: sin recuadros negros */
-[data-testid="stChatMessageUser"],
-[data-testid="stChatMessageAssistant"],
-div[data-testid="stMarkdownContainer"] > p {
-    background-color: transparent !important;
-    color: #3A3A3A !important;
-    border: none !important;
+/* --- CHAT --- */
+[data-testid="stChatInput"] {
+    background-color: #FFF8F0 !important; /* crema */
+    border-top: 1px solid #EBDDC9 !important;
 }
 
-/* Mensajes del foro */
-div[data-testid="stChatMessageUser"] {
-    background-color: #FFF2E1 !important; /* crema más claro */
-    border-radius: 12px;
-    padding: 10px 14px;
-}
-div[data-testid="stChatMessageAssistant"] {
-    background-color: #E9F7F2 !important; /* verde menta pastel */
-    border-radius: 12px;
-    padding: 10px 14px;
-}
-
-/* Títulos y texto */
-h1, h2, h3, h4, h5, h6 {
-    color: #2B2B2B;
-    font-family: "Poppins", "Helvetica Neue", sans-serif;
-}
-p, span, div, label {
-    color: #3A3A3A !important;
-    font-family: "Poppins", "Helvetica Neue", sans-serif;
-}
-
-/* Pie de página */
-footer {
-    background-color: transparent;
-    color: #7A7A7A;
-    font-size: 0.9rem;
-}
-
-/* Eliminar negro del input inferior del chat */
-div[data-baseweb="textarea"] textarea {
+/* Caja de texto donde se escribe (parte negra antes) */
+[data-baseweb="textarea"] textarea {
     background-color: #FFFFFF !important;
     color: #3A3A3A !important;
-    border: 1px solid #EBDDC9 !important;
+    border: 1px solid #EAD8C5 !important;
+    border-radius: 20px !important;
+    padding: 10px 16px !important;
 }
 
-/* Scroll pastel */
-::-webkit-scrollbar {
-    width: 8px;
+/* Botón de enviar (flecha) */
+[data-testid="stChatInputSubmitButton"] {
+    background-color: #B8E0D2 !important;
+    border-radius: 50% !important;
 }
-::-webkit-scrollbar-thumb {
-    background-color: #F3DCCB;
-    border-radius: 4px;
-}
-
-/* Borrar bordes oscuros y cajas duras */
-* {
-    box-shadow: none !important;
-    border-color: #EAD8C5 !important;
+[data-testid="stChatInputSubmitButton"]:hover {
+    background-color: #A3D9C9 !important;
 }
 
-/* Textos importantes más vivos */
-strong, b {
-    color: #364F6B;
+/* Mensajes del usuario y asistente */
+[data-testid="stChatMessageUser"] {
+    background-color: #FFF2E1 !important; /* crema pastel */
+    color: #3A3A3A !important;
+    border-radius: 12px;
+}
+[data-testid="stChatMessageAssistant"] {
+    background-color: #E9F7F2 !important; /* verde menta suave */
+    color: #3A3A3A !important;
+    border-radius: 12px;
 }
 
-/* Enlaces en celeste pastel */
+/* Enlaces */
 a {
     color: #6AAED6 !important;
-    text-decoration: none;
 }
 a:hover {
     text-decoration: underline;
 }
+
+/* Tipografía */
+h1, h2, h3, h4, h5 {
+    color: #2B2B2B;
+    font-family: "Poppins", sans-serif;
+}
+p, span, div, label {
+    color: #3A3A3A !important;
+    font-family: "Poppins", sans-serif;
+}
+
+/* Scroll suave */
+::-webkit-scrollbar-thumb {
+    background-color: #EBDDC9;
+    border-radius: 5px;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
