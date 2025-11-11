@@ -3,45 +3,66 @@ import requests
 
 st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="wide")
 
-# --- Estilos personalizados ---
+# 🌈 --- Estilos personalizados ---
 st.markdown("""
     <style>
         body {
             background-color: #FFF8E7; /* Fondo crema */
-            color: #2B2B2B;
-            font-family: 'Arial', sans-serif;
+            color: #2B2B2B; /* Texto oscuro para contraste */
+            font-family: 'Helvetica', sans-serif;
         }
         section[data-testid="stSidebar"] {
             background-color: #A7C7E7; /* Azul pastel */
+            color: #2B2B2B;
+        }
+        h1, h2, h3, h4, h5 {
+            color: #2B2B2B;
+        }
+        .stTextInput>div>div>input {
+            background-color: #FFFFFF;
+            color: #2B2B2B;
+            border: 1px solid #D8CFC4;
+            border-radius: 8px;
         }
         .stButton>button {
             background-color: #A7C7E7;
             color: #2B2B2B;
             border-radius: 10px;
+            font-weight: 600;
             border: none;
             padding: 8px 16px;
         }
+        .stButton>button:hover {
+            background-color: #91B9D9;
+            color: #1A1A1A;
+        }
         .chat-bubble-user {
-            background-color: #DDEBF7;
+            background-color: #DCEBF8;
             color: #2B2B2B;
             border-radius: 12px;
-            padding: 8px 15px;
+            padding: 10px 15px;
             margin-bottom: 6px;
         }
         .chat-bubble-ai {
-            background-color: #F4F1ED;
+            background-color: #F9EFE3;
             color: #2B2B2B;
             border-radius: 12px;
-            padding: 8px 15px;
+            padding: 10px 15px;
             margin-bottom: 6px;
-            border: 1px solid #D8CFC4;
+            border: 1px solid #E2D7C3;
         }
         .forum-card {
-            background-color: #F4F1ED;
+            background-color: #FAF3E0;
+            color: #2B2B2B;
             padding: 15px;
             border-radius: 15px;
             margin-bottom: 10px;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #E2D7C3;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        /* Fondo del contenedor principal */
+        [data-testid="stAppViewContainer"] {
+            background-color: #FFF8E7;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -66,19 +87,19 @@ with col1:
     if st.button("☰", key="menu_button"):
         toggle_menu()
 
-# --- Menú lateral ocultable ---
+# --- Menú lateral (se puede ocultar) ---
 if st.session_state.menu_visible:
     with st.sidebar:
         st.header("📘 Menú")
-        st.markdown("**Opciones:**")
         if st.button("🏠 Cerrar menú"):
             st.session_state.menu_visible = False
             st.experimental_rerun()
-        st.button("🕓 Historial")
-        st.subheader("🤝 Grupos de apoyo")
+        st.markdown("### 🕓 Historial")
+        st.markdown("Aquí verás tus conversaciones previas con ANIMA.")
+        st.markdown("### 🤝 Grupos de apoyo UDD")
         grupos = ["Ansiedad y Estrés", "Motivación y Hábitos", "Dificultades Académicas", "Autoestima y Confianza"]
         for g in grupos:
-            st.markdown(f"<div class='forum-card'><b>{g}</b><br><i>Comparte experiencias y apóyate con otros estudiantes UDD.</i></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='forum-card'><b>{g}</b><br><i>Espacio para compartir experiencias con otros estudiantes UDD.</i></div>", unsafe_allow_html=True)
 
 # --- Inicio de sesión ---
 if not st.session_state.logged_in:
@@ -125,7 +146,7 @@ if st.button("Enviar"):
         # --- IA simulada (puedes reemplazar con Groq u OpenAI) ---
         ai_response = (
             "Gracias por compartir cómo te sientes 💬. "
-            "Si necesitas ayuda urgente, contacta a nuestro equipo en "
+            "Si necesitas ayuda inmediata, contacta a nuestro equipo en "
             "[WhatsApp](https://wa.me/56912345678). 💙"
         )
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
@@ -133,7 +154,6 @@ if st.button("Enviar"):
 
 st.markdown("---")
 st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
-
 
 
 
