@@ -299,7 +299,7 @@ def calendar_editor(user_data):
             user_data.setdefault("events", []).append(new)
             save_user_data(user, user_data)
             st.success("Evento agregado correctamente.")
-            st.experimental_rerun()
+            st.rerun()
 
     st.markdown("---")
     st.subheader("Tus eventos (editar / eliminar)")
@@ -436,7 +436,8 @@ elif choice == "Grupos de apoyo":
         if new_msg.strip():
             st.session_state.forums[group].append({"author":user,"time":datetime.now().strftime("%H:%M"),"text":new_msg.strip()})
             st.success("Publicado.")
-            st.experimental_rerun()
+            st.rerun()
+
 
 # Historial view
 elif choice == "Historial":
