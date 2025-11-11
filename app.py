@@ -1,141 +1,106 @@
 import streamlit as st
 from groq import Groq
-import datetime
+import os
 
-# =========================
-# CONFIGURACIÓN BÁSICA
-# =========================
-st.set_page_config(page_title="Anima UDD", layout="wide")
+# Título y configuración de la app
+st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", page_icon="💙")
 
-# Inicializar cliente Groq
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# --- Inicializar cliente Groq ---
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# =========================
-# SESIONES
-# =========================
-if "mensajes" not in st.session_state:
-    st.session_state.mensajes = []
+# --- FUNCIONES AUXILIARES ---
 
-if "usuario" not in st.session_state:
-    st.session_state.usuario = None
+def obtener_respuesta(mensaje):
+    """Genera una respuesta de la IA usando Groq"""
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.2-70b-text-preview",
+            messages=[{"role": "system", "content": "Eres un asistente empático y comprensivo de apoyo emocional de la Universidad del Desarrollo (UDD)."},
+                      {"role": "user", "content": mensaje}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"⚠️ Error al conectar con la IA: {e}"
 
+def mostrar_menu():
+    """Menú lateral con opciones adicionales"""
+    with st.sidebar:
+        st.title("☰ Menú ANIMA")
+        opcion = st.radio("Selecciona una opción:", ["Chat de ayuda", "Historial", "Grupos de apoyo", "Cerrar sesión"])
+
+        if opcion == "Historial":
+            st.subheader("🗂️ Historial de conversaciones")
+            if "historial" in st.session_state and st.session_state.historial:
+                for msg in st.session_state.historial:
+                    st.markdown(f"**Tú:** {msg['user']}")
+                    st.markdown(f"**ANIMA:** {msg['bot']}")
+                    st.markdown("---")
+            else:
+                st.info("No hay conversaciones previas aún.")
+
+        elif opcion == "Grupos de apoyo":
+            st.subheader("👥 Grupos de ayuda entre estudiantes UDD")
+            st.markdown("""
+            - **Bienestar y salud mental** 🧠  
+              Grupo para conversar sobre estrés académico, ansiedad y autocuidado.
+
+            - **Apoyo entre compañeros** 🤝  
+              Espacio para compartir experiencias universitarias y apoyarse mutuamente.
+
+            - **Motivación y energía** ☀️  
+              Grupo para quienes buscan mejorar su ánimo o reencontrar motivación.
+            """)
+        
+        elif opcion == "Cerrar sesión":
+            st.session_state.clear()
+            st.experimental_rerun()
+
+
+# --- SECCIÓN DE INICIO DE SESIÓN ---
+if "logged_in" not in st.session_state:
+    st.title("💙 ANIMA - Apoyo Emocional UDD")
+    st.subheader("Inicio de sesión")
+    correo = st.text_input("Correo institucional UDD", placeholder="nombre.apellido@udd.cl")
+    password = st.text_input("Contraseña", type="password")
+
+    if st.button("Iniciar sesión"):
+        if correo.endswith("@udd.cl") and len(password) > 3:
+            st.session_state.logged_in = True
+            st.session_state.usuario = correo
+            st.session_state.historial = []
+            st.success("Inicio de sesión exitoso 💫")
+            st.experimental_rerun()
+        else:
+            st.error("Por favor, usa tu correo institucional UDD y una contraseña válida.")
+    st.stop()
+
+
+# --- INTERFAZ PRINCIPAL DEL CHAT ---
+mostrar_menu()
+
+st.title("💬 Chat de apoyo emocional ANIMA")
+st.write("Hola 👋 Soy **ANIMA**, tu asistente emocional UDD. ¿Cómo te sientes hoy?")
+
+# Inicializar historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# =========================
-# BARRA LATERAL (MENÚ)
-# =========================
-with st.sidebar:
-    st.markdown("### ☰ Menú Principal")
+# Entrada del usuario
+mensaje_usuario = st.chat_input("Escribe aquí tu mensaje...")
 
-    menu = st.radio(
-        "Navegación",
-        ["💬 Chat", "👤 Inicio de sesión", "🕒 Historial", "🤝 Grupos de ayuda"],
-        label_visibility="collapsed"
-    )
+if mensaje_usuario:
+    respuesta = obtener_respuesta(mensaje_usuario)
+    st.session_state.historial.append({"user": mensaje_usuario, "bot": respuesta})
 
-    st.divider()
-    if st.button("🧹 Reiniciar chat"):
-        usuario = st.session_state.usuario
-        st.session_state.clear()
-        st.session_state.usuario = usuario
-        st.rerun()
+# Mostrar historial
+for msg in st.session_state.historial:
+    with st.chat_message("user"):
+        st.write(msg["user"])
+    with st.chat_message("assistant"):
+        st.write(msg["bot"])
 
-# =========================
-# 1️⃣ INICIO DE SESIÓN
-# =========================
-if menu == "👤 Inicio de sesión":
-    st.title("👤 Iniciar sesión en Anima UDD")
+st.markdown("---")
+st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
 
-    correo = st.text_input("Correo UDD", placeholder="nombre.apellido@udd.cl")
-    if st.button("Iniciar sesión"):
-        if correo.endswith("@udd.cl"):
-            st.session_state.usuario = correo
-            st.success(f"Bienvenida/o, {correo.split('@')[0]} 💙")
-        else:
-            st.error("Por favor usa tu correo institucional (@udd.cl)")
-
-    st.markdown("---")
-    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
-
-# =========================
-# 2️⃣ HISTORIAL DE CHAT
-# =========================
-elif menu == "🕒 Historial":
-    st.title("🕒 Historial de conversaciones")
-    if len(st.session_state.historial) == 0:
-        st.info("No hay conversaciones guardadas aún.")
-    else:
-        for i, registro in enumerate(reversed(st.session_state.historial), 1):
-            st.markdown(f"**Chat {i} - {registro['fecha']}**")
-            st.write(registro['resumen'])
-            st.divider()
-
-    st.markdown("---")
-    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
-
-# =========================
-# 3️⃣ GRUPOS DE AYUDA
-# =========================
-elif menu == "🤝 Grupos de ayuda":
-    st.title("🤝 Grupos de ayuda UDD")
-    st.markdown("""
-    Aquí puedes encontrar apoyo entre estudiantes de la universidad:
-
-    - 💬 **Salud Mental:** Conversatorios y acompañamiento entre pares.  
-    - 📚 **Apoyo Académico:** Tutorías entre estudiantes de distintas carreras.  
-    - 🌱 **Bienestar Estudiantil:** Actividades recreativas y grupos de autoayuda.  
-
-    👉 Próximamente podrás unirte directamente desde Anima.
-    """)
-
-    st.markdown("---")
-    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
-
-# =========================
-# 4️⃣ CHAT PRINCIPAL
-# =========================
-else:
-    st.title("💬 Anima UDD")
-    st.markdown("Tu espacio de acompañamiento emocional 🌿")
-
-    # Mostrar mensajes del chat
-    for msg in st.session_state.mensajes:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    # Entrada de usuario
-    entrada = st.chat_input("¿Cómo te sientes hoy?")
-
-    if entrada:
-        st.session_state.mensajes.append({"role": "user", "content": entrada})
-        with st.chat_message("user"):
-            st.markdown(entrada)
-
-        try:
-            respuesta = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.mensajes
-            )
-            contenido = respuesta.choices[0].message.content
-        except Exception as e:
-            contenido = f"⚠️ Error al conectar con la IA: {e}"
-
-        with st.chat_message("assistant"):
-            st.markdown(contenido)
-
-        st.session_state.mensajes.append({"role": "assistant", "content": contenido})
-
-        # Guardar resumen en historial
-        if len(st.session_state.mensajes) > 4:
-            resumen = st.session_state.mensajes[-1]["content"][:150] + "..."
-            st.session_state.historial.append({
-                "fecha": datetime.datetime.now().strftime("%d-%m-%Y %H:%M"),
-                "resumen": resumen
-            })
-
-    # 👇 Pie de página institucional
-    st.markdown("---")
-    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
 
 
