@@ -159,7 +159,7 @@ def survey_block():
         # Keep summary in session for suggestions later
         st.session_state.survey_summary = {"energia":energia,"animo":animo,"conc":concentracion,"motiv":motivacion,"prom":prom}
         st.success("Gracias. ANIMA usará esto para sugerir una planificación equilibrada.")
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
 
 # If not done survey, show it on first visit to calendar or chat
