@@ -8,82 +8,85 @@ st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", 
 # --- ESTILOS PERSONALIZADOS (fondo crema + azul pastel) ---
 st.markdown("""
 <style>
-/* Fondo general */
+/* Fondo principal */
 [data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0;  /* Crema suave */
-    background-image: linear-gradient(180deg, #FFFDF8 0%, #FFF5E6 100%);
+    background-color: #FFF8F0; /* Fondo crema */
+    background-image: none;
 }
 
-/* Panel lateral */
+/* Sidebar (lateral) */
 [data-testid="stSidebar"] {
-    background-color: #CBE4F9;  /* Azul pastel */
+    background-color: #CFE9F5; /* Azul pastel */
     color: #2E2E2E !important;
 }
 
 /* Botones */
 .stButton>button {
-    background-color: #AED9E0;
+    background-color: #B9E5E8; /* Celeste pastel */
     color: #2E2E2E;
-    border-radius: 5px;
     border: none;
-    font-weight: bold;
-    padding: 8px 20px;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-weight: 600;
 }
 .stButton>button:hover {
-    background-color: #BEE3ED;
-    color: #000;
+    background-color: #A9DCE2;
 }
 
-/* Inputs (chat, login, foros) */
+/* Entradas de texto */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
     background-color: #FFFFFF;
-    border: 1px solid #B0BEC5;
+    border: 1px solid #DADADA;
     border-radius: 8px;
     color: #2E2E2E;
 }
 
 /* Mensajes del chat */
 [data-testid="stChatMessageUser"] {
-    background-color: #FFF3E0;
+    background-color: #FFF3E0; /* Naranja claro pastel */
+    color: #2E2E2E;
     border-radius: 10px;
+    padding: 10px;
 }
 [data-testid="stChatMessageAssistant"] {
-    background-color: #E3F2FD;
+    background-color: #E3F2FD; /* Azul muy claro */
+    color: #2E2E2E;
     border-radius: 10px;
+    padding: 10px;
 }
 
 /* Bloques del foro de apoyo */
 div[data-testid="stMarkdownContainer"] > p,
 div[data-testid="stMarkdownContainer"] {
-    background-color: #FFFBEA;  /* Amarillo bebé pastel */
-    color: #2E2E2E !important;  /* Gris oscuro */
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid #F0E3B2;
+    background-color: #FFFBEA; /* Amarillo pastel */
+    color: #2E2E2E !important; /* Gris oscuro */
+    border-radius: 8px;
+    padding: 12px;
+    border: none; /* Sin borde visible */
 }
 
 /* Títulos y texto general */
 h1, h2, h3, h4, h5, h6, p, span, div, label {
-    color: #2E2E2E !important;
-    font-family: "Helvetica Neue", sans-serif;
+    color: #2E2E2E !important; /* Gris oscuro para contraste */
+    font-family: "Helvetica Neue", "Open Sans", sans-serif;
 }
 
-/* Botón menú hamburguesa flotante */
-#menu-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 999;
-    background-color: #AED9E0;
-    color: #2E2E2E;
-    font-weight: bold;
-    border: none;
-    border-radius: 10px;
-    padding: 6px 12px;
-    cursor: pointer;
+/* Quitar sombras y bordes duros */
+* {
+    box-shadow: none !important;
+}
+
+/* Scrollbar más suave */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #E6D8C3;
+    border-radius: 4px;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- Inicializar cliente Groq ---
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
