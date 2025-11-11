@@ -120,7 +120,8 @@ def login_block():
             st.session_state.logged_in = True
             st.session_state.user = correo.split("@")[0]
             st.success("Inicio de sesión exitoso 💫")
-            st.experimental_rerun()
+            st.rerun()
+
         else:
             st.error("Usa un correo institucional válido (@udd.cl) y una contraseña de al menos 4 caracteres.")
     st.stop()
