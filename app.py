@@ -1,134 +1,141 @@
 import streamlit as st
-import os
-from groq import Groq  # Librería oficial de Groq
+from groq import Groq
+import datetime
 
-# --- Configuración inicial ---
-st.set_page_config(page_title="💬 ANIMA - Apoyo Emocional UDD", page_icon="💙", layout="centered")
+# =========================
+# CONFIGURACIÓN BÁSICA
+# =========================
+st.set_page_config(page_title="Anima UDD", layout="wide")
 
-# --- Cliente Groq ---
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Inicializar cliente Groq
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- Función para validar correo institucional ---
-def validar_correo_udc(correo):
-    return correo.lower().endswith("@udd.cl")
+# =========================
+# SESIONES
+# =========================
+if "mensajes" not in st.session_state:
+    st.session_state.mensajes = []
 
-# --- Pantalla de inicio de sesión ---
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
 
-if not st.session_state.autenticado:
-    st.title("🔐 Inicia sesión en ANIMA - UDD")
-    st.write("Por favor, inicia sesión con tu **correo institucional @udd.cl** para continuar.")
-    correo = st.text_input("Correo institucional", placeholder="tucorreo@udd.cl")
-    if st.button("Ingresar"):
-        if validar_correo_udc(correo):
-            st.session_state.autenticado = True
-            st.session_state.usuario = correo
-            st.success("✅ Inicio de sesión exitoso. Bienvenida/o a ANIMA 💙")
-            st.rerun()
-        else:
-            st.error("Solo se permiten correos institucionales @udd.cl")
-    st.stop()
-
-# --- Inicialización del chat ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 if "historial" not in st.session_state:
     st.session_state.historial = []
-if "mostrar_whatsapp" not in st.session_state:
-    st.session_state.mostrar_whatsapp = False
 
-# --- Funciones auxiliares ---
-def guardar_historial(usuario, mensaje, respuesta):
-    nuevo = {"usuario": usuario, "mensaje": mensaje, "respuesta": respuesta}
-    st.session_state.historial.append(nuevo)
+# =========================
+# BARRA LATERAL (MENÚ)
+# =========================
+with st.sidebar:
+    st.markdown("### ☰ Menú Principal")
 
-def necesita_apoyo(mensaje):
-    palabras_clave = [
-        "triste", "ansiosa", "estresada", "cansada", "mal", "hablar con alguien",
-        "ayuda", "psicólogo", "depresión", "no puedo", "angustia", "preocupada"
-    ]
-    return any(palabra in mensaje.lower() for palabra in palabras_clave)
+    menu = st.radio(
+        "Navegación",
+        ["💬 Chat", "👤 Inicio de sesión", "🕒 Historial", "🤝 Grupos de ayuda"],
+        label_visibility="collapsed"
+    )
 
-# --- Interfaz principal ---
-st.title("💙 ANIMA - Apoyo Emocional UDD")
-st.caption(f"Sesión iniciada como: **{st.session_state.usuario}**")
-st.write("ANIMA te escucha y te acompaña. Cuéntame cómo te sientes hoy 💛")
-
-# Mostrar historial del chat
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# Entrada del usuario
-if prompt := st.chat_input("Escribe tu mensaje aquí..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    if necesita_apoyo(prompt):
-        st.session_state.mostrar_whatsapp = True
-
-    # --- Llamada al modelo de Groq ---
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
-
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": "Eres ANIMA, un asistente emocional de la Universidad del Desarrollo. Escucha con empatía, haz preguntas suaves y deriva a un profesional si es necesario."},
-                    *st.session_state.messages,
-                ],
-                stream=True,
-            )
-
-            for chunk in response:
-                if chunk.choices[0].delta and chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    message_placeholder.markdown(full_response + "▌")
-            message_placeholder.markdown(full_response)
-
-        except Exception as e:
-            full_response = "No pude conectarme en este momento 😔"
-            st.error(f"Error al conectar con Groq: {e}")
-
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        guardar_historial(st.session_state.usuario, prompt, full_response)
-
-# --- Mostrar botón de WhatsApp ---
-if st.session_state.mostrar_whatsapp:
-    st.markdown("---")
-    st.markdown("💚 Parece que necesitas hablar con alguien. Puedes contactar directamente con apoyo humano de la UDD:")
-    whatsapp_url = "https://wa.me/56912345678?text=Hola%20ANIMA,%20necesito%20hablar%20con%20alguien%20de%20apoyo."
-    st.markdown(f"[📞 Hablar con apoyo UDD]({whatsapp_url})", unsafe_allow_html=True)
-
-# --- Historial ---
-with st.expander("📋 Ver historial de conversación"):
-    for item in st.session_state.historial:
-        st.markdown(f"**Tú:** {item['mensaje']}")
-        st.markdown(f"**ANIMA:** {item['respuesta']}")
-        st.markdown("---")
-
-# --- Botones inferiores ---
-col1, col2 = st.columns(2)
-with col1:
+    st.divider()
     if st.button("🧹 Reiniciar chat"):
         usuario = st.session_state.usuario
         st.session_state.clear()
         st.session_state.usuario = usuario
-        st.session_state.autenticado = True
         st.rerun()
 
-with col2:
-    if st.button("🚪 Cerrar sesión"):
-        st.session_state.clear()
-        st.rerun()
+# =========================
+# 1️⃣ INICIO DE SESIÓN
+# =========================
+if menu == "👤 Inicio de sesión":
+    st.title("👤 Iniciar sesión en Anima UDD")
 
-st.markdown("---")
-st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+    correo = st.text_input("Correo UDD", placeholder="nombre.apellido@udd.cl")
+    if st.button("Iniciar sesión"):
+        if correo.endswith("@udd.cl"):
+            st.session_state.usuario = correo
+            st.success(f"Bienvenida/o, {correo.split('@')[0]} 💙")
+        else:
+            st.error("Por favor usa tu correo institucional (@udd.cl)")
+
+    st.markdown("---")
+    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
+# =========================
+# 2️⃣ HISTORIAL DE CHAT
+# =========================
+elif menu == "🕒 Historial":
+    st.title("🕒 Historial de conversaciones")
+    if len(st.session_state.historial) == 0:
+        st.info("No hay conversaciones guardadas aún.")
+    else:
+        for i, registro in enumerate(reversed(st.session_state.historial), 1):
+            st.markdown(f"**Chat {i} - {registro['fecha']}**")
+            st.write(registro['resumen'])
+            st.divider()
+
+    st.markdown("---")
+    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
+# =========================
+# 3️⃣ GRUPOS DE AYUDA
+# =========================
+elif menu == "🤝 Grupos de ayuda":
+    st.title("🤝 Grupos de ayuda UDD")
+    st.markdown("""
+    Aquí puedes encontrar apoyo entre estudiantes de la universidad:
+
+    - 💬 **Salud Mental:** Conversatorios y acompañamiento entre pares.  
+    - 📚 **Apoyo Académico:** Tutorías entre estudiantes de distintas carreras.  
+    - 🌱 **Bienestar Estudiantil:** Actividades recreativas y grupos de autoayuda.  
+
+    👉 Próximamente podrás unirte directamente desde Anima.
+    """)
+
+    st.markdown("---")
+    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
+# =========================
+# 4️⃣ CHAT PRINCIPAL
+# =========================
+else:
+    st.title("💬 Anima UDD")
+    st.markdown("Tu espacio de acompañamiento emocional 🌿")
+
+    # Mostrar mensajes del chat
+    for msg in st.session_state.mensajes:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Entrada de usuario
+    entrada = st.chat_input("¿Cómo te sientes hoy?")
+
+    if entrada:
+        st.session_state.mensajes.append({"role": "user", "content": entrada})
+        with st.chat_message("user"):
+            st.markdown(entrada)
+
+        try:
+            respuesta = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=st.session_state.mensajes
+            )
+            contenido = respuesta.choices[0].message.content
+        except Exception as e:
+            contenido = f"⚠️ Error al conectar con la IA: {e}"
+
+        with st.chat_message("assistant"):
+            st.markdown(contenido)
+
+        st.session_state.mensajes.append({"role": "assistant", "content": contenido})
+
+        # Guardar resumen en historial
+        if len(st.session_state.mensajes) > 4:
+            resumen = st.session_state.mensajes[-1]["content"][:150] + "..."
+            st.session_state.historial.append({
+                "fecha": datetime.datetime.now().strftime("%d-%m-%Y %H:%M"),
+                "resumen": resumen
+            })
+
+    # 👇 Pie de página institucional
+    st.markdown("---")
+    st.caption("WebApp ANIMA - Apoyo Emocional UDD 💙 Desarrollado con Streamlit + Groq")
+
 
