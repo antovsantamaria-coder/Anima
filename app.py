@@ -8,28 +8,27 @@ st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", 
 # --- ESTILOS PERSONALIZADOS (fondo crema + azul pastel) ---
 st.markdown("""
 <style>
-/* Fondo principal */
+/* Fondo general */
 [data-testid="stAppViewContainer"] {
-    background-color: #FFF8F0; /* Crema suave */
+    background-color: #FFF8F0; /* crema */
     background-image: none;
 }
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #CBE4F9; /* Azul pastel */
+    background-color: #CBE4F9; /* azul pastel */
     color: #2E2E2E !important;
     border: none;
 }
 
 /* Botones */
 .stButton>button {
-    background-color: #B9E5E8; /* Celeste pastel */
+    background-color: #B9E5E8; /* celeste pastel */
     color: #2E2E2E;
     border: none;
     border-radius: 8px;
     padding: 8px 18px;
     font-weight: 600;
-    text-transform: none; /* Mantiene mayúsculas/minúsculas originales */
 }
 .stButton>button:hover {
     background-color: #A9DCE2;
@@ -43,47 +42,31 @@ st.markdown("""
     color: #2E2E2E;
 }
 
-/* Mensajes del chat */
-[data-testid="stChatMessageUser"] {
-    background-color: #FFF2D7; /* Amarillo crema pastel */
-    color: #2E2E2E;
-    border-radius: 10px;
-    padding: 10px;
-    border: none;
-}
-[data-testid="stChatMessageAssistant"] {
-    background-color: #DDEEFF; /* Azul bebé */
-    color: #2E2E2E;
-    border-radius: 10px;
-    padding: 10px;
-    border: none;
-}
-
-/* Bloques del foro */
+/* Mensajes del chat y foro (sin recuadros de color) */
+[data-testid="stChatMessageUser"],
+[data-testid="stChatMessageAssistant"],
 div[data-testid="stMarkdownContainer"] > p,
 div[data-testid="stMarkdownContainer"] {
-    background-color: #FFF9E6; /* Amarillo pastel claro */
+    background-color: transparent !important; /* sin fondo */
     color: #2E2E2E !important;
-    border-radius: 10px;
-    padding: 12px;
-    border: none; /* Sin borde visible */
+    border: none !important;
+    padding: 0;
 }
 
 /* Títulos y textos */
 h1, h2, h3, h4, h5, h6 {
     color: #2E2E2E;
     font-family: "Helvetica Neue", "Open Sans", sans-serif;
-    text-transform: none; /* Respeta las mayúsculas originales */
 }
 p, span, div, label {
     color: #2E2E2E !important;
     font-family: "Helvetica Neue", "Open Sans", sans-serif;
-    text-transform: none;
 }
 
-/* Quitar bordes duros o sombreados */
+/* Quitar bordes o sombras duras */
 * {
     box-shadow: none !important;
+    border-radius: 0 !important;
 }
 
 /* Scrollbar pastel */
@@ -96,6 +79,7 @@ p, span, div, label {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
