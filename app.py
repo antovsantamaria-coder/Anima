@@ -24,7 +24,7 @@ st.markdown("""
 .stButton>button {
     background-color: #AED9E0;
     color: #2E2E2E;
-    border-radius: 10px;
+    border-radius: 5px;
     border: none;
     font-weight: bold;
     padding: 8px 20px;
@@ -57,7 +57,7 @@ div[data-testid="stMarkdownContainer"] > p,
 div[data-testid="stMarkdownContainer"] {
     background-color: #FFFBEA;  /* Amarillo bebé pastel */
     color: #2E2E2E !important;  /* Gris oscuro */
-    border-radius: 10px;
+    border-radius: 5px;
     padding: 10px;
     border: 1px solid #F0E3B2;
 }
