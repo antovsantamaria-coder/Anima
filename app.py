@@ -8,74 +8,113 @@ st.set_page_config(page_title="ANIMA - Apoyo Emocional UDD", layout="centered", 
 # --- ESTILOS PERSONALIZADOS (fondo crema + azul pastel) ---
 st.markdown("""
 <style>
+
 /* Fondo general */
 [data-testid="stAppViewContainer"] {
     background-color: #FFF8F0; /* crema */
     background-image: none;
 }
 
-/* Sidebar */
+/* Barra lateral */
 [data-testid="stSidebar"] {
-    background-color: #CBE4F9; /* azul pastel */
-    color: #2E2E2E !important;
+    background-color: #D7E8F7; /* azul bebé pastel */
+    color: #3A3A3A;
     border: none;
 }
 
 /* Botones */
 .stButton>button {
-    background-color: #B9E5E8; /* celeste pastel */
-    color: #2E2E2E;
+    background-color: #B8E0D2; /* verde agua pastel */
+    color: #3A3A3A;
     border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
+    border-radius: 10px;
     font-weight: 600;
+    padding: 8px 18px;
 }
 .stButton>button:hover {
-    background-color: #A9DCE2;
+    background-color: #A3D9C9;
 }
 
-/* Entradas de texto */
+/* Input de texto */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
-    background-color: #FFFFFF;
-    border: 1px solid #E5E5E5;
-    border-radius: 8px;
-    color: #2E2E2E;
+    background-color: #FFF;
+    border: 1px solid #EBDDC9;
+    border-radius: 10px;
+    color: #3A3A3A;
 }
 
-/* Mensajes del chat y foro (sin recuadros de color) */
+/* Chat y foro: sin recuadros negros */
 [data-testid="stChatMessageUser"],
 [data-testid="stChatMessageAssistant"],
-div[data-testid="stMarkdownContainer"] > p,
-div[data-testid="stMarkdownContainer"] {
-    background-color: transparent !important; /* sin fondo */
-    color: #2E2E2E !important;
+div[data-testid="stMarkdownContainer"] > p {
+    background-color: transparent !important;
+    color: #3A3A3A !important;
     border: none !important;
-    padding: 0;
 }
 
-/* Títulos y textos */
+/* Mensajes del foro */
+div[data-testid="stChatMessageUser"] {
+    background-color: #FFF2E1 !important; /* crema más claro */
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+div[data-testid="stChatMessageAssistant"] {
+    background-color: #E9F7F2 !important; /* verde menta pastel */
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+/* Títulos y texto */
 h1, h2, h3, h4, h5, h6 {
-    color: #2E2E2E;
-    font-family: "Helvetica Neue", "Open Sans", sans-serif;
+    color: #2B2B2B;
+    font-family: "Poppins", "Helvetica Neue", sans-serif;
 }
 p, span, div, label {
-    color: #2E2E2E !important;
-    font-family: "Helvetica Neue", "Open Sans", sans-serif;
+    color: #3A3A3A !important;
+    font-family: "Poppins", "Helvetica Neue", sans-serif;
 }
 
-/* Quitar bordes o sombras duras */
-* {
-    box-shadow: none !important;
-    border-radius: 0 !important;
+/* Pie de página */
+footer {
+    background-color: transparent;
+    color: #7A7A7A;
+    font-size: 0.9rem;
 }
 
-/* Scrollbar pastel */
+/* Eliminar negro del input inferior del chat */
+div[data-baseweb="textarea"] textarea {
+    background-color: #FFFFFF !important;
+    color: #3A3A3A !important;
+    border: 1px solid #EBDDC9 !important;
+}
+
+/* Scroll pastel */
 ::-webkit-scrollbar {
     width: 8px;
 }
 ::-webkit-scrollbar-thumb {
-    background-color: #E6D8C3;
+    background-color: #F3DCCB;
     border-radius: 4px;
+}
+
+/* Borrar bordes oscuros y cajas duras */
+* {
+    box-shadow: none !important;
+    border-color: #EAD8C5 !important;
+}
+
+/* Textos importantes más vivos */
+strong, b {
+    color: #364F6B;
+}
+
+/* Enlaces en celeste pastel */
+a {
+    color: #6AAED6 !important;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
 }
 </style>
 """, unsafe_allow_html=True)
