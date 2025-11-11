@@ -34,7 +34,7 @@ st.markdown("""
     color: #000;
 }
 
-/* Inputs */
+/* Inputs (chat, login, foros) */
 .stTextInput>div>div>input, .stTextArea>div>textarea {
     background-color: #FFFFFF;
     border: 1px solid #B0BEC5;
@@ -42,7 +42,7 @@ st.markdown("""
     color: #2E2E2E;
 }
 
-/* Chat */
+/* Mensajes del chat */
 [data-testid="stChatMessageUser"] {
     background-color: #FFF3E0;
     border-radius: 10px;
@@ -52,7 +52,17 @@ st.markdown("""
     border-radius: 10px;
 }
 
-/* Títulos y texto */
+/* Bloques del foro de apoyo */
+div[data-testid="stMarkdownContainer"] > p,
+div[data-testid="stMarkdownContainer"] {
+    background-color: #FFFBEA;  /* Amarillo bebé pastel */
+    color: #2E2E2E !important;  /* Gris oscuro */
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid #F0E3B2;
+}
+
+/* Títulos y texto general */
 h1, h2, h3, h4, h5, h6, p, span, div, label {
     color: #2E2E2E !important;
     font-family: "Helvetica Neue", sans-serif;
