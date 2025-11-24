@@ -70,8 +70,7 @@ def ai_reply(prompt):
     if client is None:
         return "ANIMA no puede conectarse al servicio de IA en este momento. Igual puedo ayudarte con tu calendario."
     try:
-        # AQUÍ ESTÁ LA MODIFICACIÓN SOLICITADA:
-        # Se instruye a la IA para incluir el enlace si detecta necesidad de ayuda profesional.
+        # Instrucción de sistema con enlace a WhatsApp en caso de riesgo
         system_instruction = (
             "Eres ANIMA, un asistente empático de la UDD que ayuda a planificar y cuidar el bienestar. "
             "Si detectas que el usuario expresa angustia severa, pensamientos de riesgo o solicita ayuda profesional explícita, "
@@ -120,6 +119,8 @@ if "menu_choice" not in st.session_state:
     st.session_state.menu_choice = "Chat de ayuda"
 if "survey_done" not in st.session_state:
     st.session_state.survey_done = False
+if "risk_detected" not in st.session_state:
+    st.session_state.risk_detected = False
 
 def login_block():
     st.markdown("<h2 style='text-align:center;'>💙 ANIMA - Apoyo Emocional UDD</h2>", unsafe_allow_html=True)
@@ -169,6 +170,14 @@ def survey_block():
         st.session_state.survey_done = True
         # Keep summary in session for suggestions later
         st.session_state.survey_summary = {"energia":energia,"animo":animo,"conc":concentracion,"motiv":motivacion,"prom":prom}
+        
+        # --- MODIFICACIÓN: Detectar riesgo automáticamente ---
+        # Si el promedio es bajo (< 4), activamos la alerta
+        if prom < 4.0:
+            st.session_state.risk_detected = True
+        else:
+            st.session_state.risk_detected = False
+            
         st.success("Gracias. ANIMA usará esto para sugerir una planificación equilibrada.")
         st.rerun()
     st.stop()
@@ -176,6 +185,22 @@ def survey_block():
 # If not done survey, show it on first visit to calendar or chat
 if not st.session_state.survey_done:
     survey_block()
+
+# --- MODIFICACIÓN: MOSTRAR ALERTA AUTOMÁTICA SI HAY RIESGO ---
+# Esto aparece en CUALQUIER pantalla si la encuesta fue negativa
+if st.session_state.get("risk_detected", False):
+    st.error("⚠️ ANIMA ha detectado que tus niveles de energía o ánimo están bajos.")
+    st.markdown("""
+    <div style="background-color: #f8d7da; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; color: #721c24; margin-bottom: 20px;">
+        <h3 style="margin-top:0; color: #721c24;">🆘 Apoyo Profesional UDD</h3>
+        <p>No tienes que pasar por esto solo/a. El equipo de bienestar está disponible para escucharte.</p>
+        <a href="https://wa.me/569XXXXXXXX" target="_blank" style="text-decoration: none;">
+            <button style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer;">
+                💬 Contactar por WhatsApp ahora
+            </button>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ---------------- Helpers for calendar ----------------
 def parse_date(d):
@@ -435,18 +460,19 @@ elif choice == "Calendario ANIMA":
 
 # Foros view (simple area)
 elif choice == "Grupos de apoyo":
-    st.title("🤝 Grupos de apoyo UDD")
+    st.title("🤝 Grupos de apoyo UDD (Anónimo)")
     # simple local forum (session-based)
     if "forums" not in st.session_state:
         st.session_state.forums = {"Bienestar y salud mental": [], "Apoyo entre compañeros": [], "Motivación y energía": []}
     group = st.selectbox("Selecciona grupo", list(st.session_state.forums.keys()))
     st.markdown(f"### Foro: {group}")
     for msg in st.session_state.forums[group]:
-        st.markdown(f"**{msg['author']} ({msg['time']}):** {msg['text']}")
+        st.markdown(f"**Anónimo ({msg['time']}):** {msg['text']}")
     new_msg = st.text_area("Escribe un comentario")
     if st.button("Publicar comentario"):
         if new_msg.strip():
-            st.session_state.forums[group].append({"author":user,"time":datetime.now().strftime("%H:%M"),"text":new_msg.strip()})
+            # FORO ANONIMO
+            st.session_state.forums[group].append({"author":"Anónimo","time":datetime.now().strftime("%H:%M"),"text":new_msg.strip()})
             st.success("Publicado.")
             st.rerun()
 
@@ -465,7 +491,6 @@ elif choice == "Historial":
 
 # save any changes to user_data at end
 save_user_data(user, user_data)
-
 
 
 
