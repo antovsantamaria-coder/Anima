@@ -70,10 +70,21 @@ def ai_reply(prompt):
     if client is None:
         return "ANIMA no puede conectarse al servicio de IA en este momento. Igual puedo ayudarte con tu calendario."
     try:
+        # AQUÍ ESTÁ LA MODIFICACIÓN SOLICITADA:
+        # Se instruye a la IA para incluir el enlace si detecta necesidad de ayuda profesional.
+        system_instruction = (
+            "Eres ANIMA, un asistente empático de la UDD que ayuda a planificar y cuidar el bienestar. "
+            "Si detectas que el usuario expresa angustia severa, pensamientos de riesgo o solicita ayuda profesional explícita, "
+            "DEBES finalizar tu respuesta sugiriendo contactar a los especialistas y proporcionar este enlace de WhatsApp: "
+            "https://wa.me/569XXXXXXXX (Indícalo amablemente)."
+        )
+        
         resp = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role":"system","content":"Eres ANIMA, un asistente empático de la UDD que ayuda a planificar y cuidar el bienestar."},
-                      {"role":"user","content":prompt}]
+            messages=[
+                {"role":"system", "content": system_instruction},
+                {"role":"user", "content": prompt}
+            ]
         )
         return resp.choices[0].message.content
     except Exception as e:
